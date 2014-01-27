@@ -12,6 +12,7 @@ As module
 Print duplicates
 ^^^^^^^^^^^^^^^^
 .. code:: python
+
     from sweeper import file_dups
     dups = file_dups(['images1', 'images2'])
     print(dups)
@@ -19,12 +20,14 @@ Print duplicates
 Remove duplicate files
 ^^^^^^^^^^^^^^^^^^^^^^
 .. code:: python
+
     from sweeper import file_dups
     rm_file_dups(['images'])
 
 Perform custom action
 ^^^^^^^^^^^^^^^^^^^^^
- .. code:: python
+.. code:: python
+
     from sweeper import file_dups
     for files in do_with_file_dups(['images']):
         for fname in files:
@@ -32,6 +35,7 @@ Perform custom action
 
 As script
 --------- 
+
     python sweeper.py --help
 
 Installation
