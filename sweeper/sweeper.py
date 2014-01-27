@@ -25,7 +25,7 @@ __version__ = '0.1.0'
 __license__ = 'GPLv3'
 
 __all__ = [
-    'file_dups', 'rm_file_dups', 'mv_file_dups', 'do_with_file_dups'
+    'file_dups', 'rm_file_dups', 'mv_file_dups', 'iter_file_dups'
 ]
 
 import sys
@@ -101,7 +101,7 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096, dest_dir='dups'
                 shutil.move(f, dest_dir)
 
 
-def do_with_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
+def iter_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
     """Yield list of duplicate files when found in specified directory list.
     """
     dups = file_dups(topdirs, hashalg, block_size)
