@@ -1,0 +1,28 @@
+import os
+from setuptools import setup
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+setup(
+    name='sweeper',
+    version='0.1.0',
+    author='Darko Poljak',
+    author_email='darko.poljak@gmail.com',
+    description='Find duplicate files in directory tree.',
+    license="GPLv3",
+    keywords=['find duplicate files', ],
+    url='https://github.com/darko-poljak/sweeper',
+    download_url='https://github.com/darko-poljak/sweeper',
+    packages=['sweeper'],
+    long_description=read('README.rst'),
+    platforms="OS Independent",
+    install_requires=["docopt"],
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
+)
+
