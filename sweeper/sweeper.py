@@ -109,11 +109,14 @@ def iter_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
         yield fpaths
 
 
-def main(args):
+def main():
     """Main when used as script. See usage (--help).
     """
     import json
+    from docopt import docopt
 
+    arguments = docopt(__doc__)
+ 
     topdirs = args['<directory>']
     if not topdirs:
         topdirs = ['./']
@@ -140,6 +143,4 @@ def main(args):
 
 # if used as script call main function
 if __name__ == '__main__':
-    from docopt import docopt
-    arguments = docopt(__doc__)
-    main(arguments)
+   main()
