@@ -6,11 +6,8 @@ Find duplicate files and perform action.
 Usage
 =====
 
-As module
----------
-
 Print duplicates
-^^^^^^^^^^^^^^^^
+
 .. code:: python
 
     from sweeper import file_dups
@@ -18,14 +15,14 @@ Print duplicates
     print(dups)
 
 Remove duplicate files
-^^^^^^^^^^^^^^^^^^^^^^
+
 .. code:: python
 
     from sweeper import file_dups
     rm_file_dups(['images'])
 
 Perform custom action
-^^^^^^^^^^^^^^^^^^^^^
+
 .. code:: python
 
     from sweeper import file_dups
@@ -33,8 +30,7 @@ Perform custom action
         for fname in files:
             print('found duplicte file with name: %s' % fname)
 
-As script
---------- 
+As script::
 
     python sweeper.py --help
 
