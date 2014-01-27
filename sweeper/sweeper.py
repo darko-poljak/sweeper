@@ -133,7 +133,9 @@ def main():
 
     if action == 'print':
         dups = file_dups(topdirs, args['--digest-alg'], args['--block-size'])
-        print(json.dumps(dict(dups), indent=4))
+        spam = dict(dups)
+        if spam:
+            print(json.dumps(spam, indent=4))
     elif action == 'move':
         mv_file_dups(topdirs, args['--digest-alg'], args['--block-size'],
                      args['--move'])
