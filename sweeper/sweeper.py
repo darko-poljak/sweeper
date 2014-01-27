@@ -21,7 +21,7 @@ Options:
 """
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __license__ = 'GPLv3'
 
 __all__ = [

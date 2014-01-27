@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
     name='sweeper',
-    version='0.1.0',
+    version='0.2.0',
     author='Darko Poljak',
     author_email='darko.poljak@gmail.com',
     description='Find duplicate files and perform action.',
@@ -15,6 +15,11 @@ setup(
     url='https://github.com/darko-poljak/sweeper',
     download_url='https://github.com/darko-poljak/sweeper',
     packages=['sweeper'],
+    entry_points={
+        'console_scripts': [
+            'sweeper=sweeper.sweeper:main',
+        ],
+    },
     long_description=read('README.rst'),
     platforms="OS Independent",
     install_requires=["docopt"],

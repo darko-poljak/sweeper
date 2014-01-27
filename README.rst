@@ -34,6 +34,10 @@ As script::
 
     python sweeper.py --help
 
+As installed console script::
+    
+    sweeper --help
+
 Installation
 ============
 
