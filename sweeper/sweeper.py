@@ -115,7 +115,7 @@ def main():
     import json
     from docopt import docopt
 
-    arguments = docopt(__doc__)
+    args = docopt(__doc__)
  
     topdirs = args['<directory>']
     if not topdirs:
