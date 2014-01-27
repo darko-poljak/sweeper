@@ -11,17 +11,18 @@ Arguments:
 
 Options:
 -h, --help                                show this screen
--b <blocksize>, --block-size=<blocksize>  size of block used when reading file's
-                                          content [default: 4096]
+-b <blocksize>, --block-size=<blocksize>  size of block used when reading
+                                          file's content [default: 4096]
 -d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
--a <action>, --action=<action>            action on duplicate files 
-                                          (print, remove, move) [default: print]
+-a <action>, --action=<action>            action on duplicate files (print,
+                                          remove, move) [default: print]
 -m <directory>, --move=<directory>        move duplicate files to directory
-                                          (used with move action) [default: ./dups]
+                                          (used with move action)
+                                          [default: ./dups]
 """
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __license__ = 'GPLv3'
 
 __all__ = [
@@ -86,7 +87,8 @@ def rm_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
             os.remove(f)
 
 
-def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096, dest_dir='dups'):
+def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
+                 dest_dir='dups'):
     """Move duplicate files found in specified directory list.
        First file in list is kept in the original directory.
     """
@@ -116,7 +118,7 @@ def main():
     from docopt import docopt
 
     args = docopt(__doc__)
- 
+
     topdirs = args['<directory>']
     if not topdirs:
         topdirs = ['./']
@@ -143,4 +145,4 @@ def main():
 
 # if used as script call main function
 if __name__ == '__main__':
-   main()
+    main()
