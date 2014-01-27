@@ -34,6 +34,7 @@ import os
 from collections import defaultdict
 
 
+# some differences in python versions
 if sys.version_info[0] == 3:
     def _do_encode(buf):
         return buf
@@ -49,6 +50,10 @@ else:
 
 
 def _filehash(filepath, hashalg, block_size):
+    """Calculate secure hash for given file content using
+       specified hash algorithm. Use block_size block size
+       when reading file content.
+    """
     md = hashlib.new(hashalg)
     with open(filepath, "rb") as f:
         for buf in iter(lambda: f.read(block_size), b''):
@@ -57,6 +62,10 @@ def _filehash(filepath, hashalg, block_size):
 
 
 def file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
+    """Find duplicate files in directory list. Return directory
+       with keys equal to file hash value and value as list of
+       file paths whose content is the same.
+    """
     dups = defaultdict(list)
     for topdir in topdirs:
         for dirpath, dirnames, filenames in os.walk(topdir):
@@ -69,12 +78,18 @@ def file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
 
 
 def rm_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
+    """Remove duplicate files found in specified directory list.
+       First file in list is kept.
+    """
     for files in do_with_file_dups(topdirs, hashalg, block_size):
         for f in files:
             os.remove(f)
 
 
 def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096, dest_dir='dups'):
+    """Move duplicate files found in specified directory list.
+       First file in list is kept in the original directory.
+    """
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
     if not os.path.isdir(dest_dir):
@@ -87,12 +102,16 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096, dest_dir='dups'
 
 
 def do_with_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
+    """Yield list of duplicate files when found in specified directory list.
+    """
     dups = file_dups(topdirs, hashalg, block_size)
     for fpaths in dups.itervalues():
         yield fpaths
 
 
 def main(args):
+    """Main when used as script. See usage (--help).
+    """
     import json
 
     topdirs = args['<directory>']
@@ -119,6 +138,7 @@ def main(args):
         print('Invalid action "%s"' % action)
 
 
+# if used as script call main function
 if __name__ == '__main__':
     from docopt import docopt
     arguments = docopt(__doc__)
