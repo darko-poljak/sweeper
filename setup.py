@@ -15,7 +15,7 @@ setup(
     url='https://github.com/darko-poljak/sweeper',
     download_url='https://github.com/darko-poljak/sweeper',
     packages=['sweeper'],
-    long_description=read('README.md'),
+    long_description=read('README.rst'),
     platforms="OS Independent",
     install_requires=["docopt"],
     classifiers=[
