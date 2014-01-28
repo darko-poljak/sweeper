@@ -14,8 +14,19 @@ Options:
 -b <blocksize>, --block-size=<blocksize>  size of block used when reading
                                           file's content [default: 4096]
 -d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
--a <action>, --action=<action>            action on duplicate files (print,
-                                          remove, move) [default: print]
+-a <action>, --action=<action>            action on duplicate files (pprint,
+                                          print, remove, move) [default: pprint]
+                                          -remove removes duplicate files except
+                                           first found
+                                          -move moves duplicate files to 
+                                           duplicates driectory, except first
+                                           found
+                                          -print prints result directory where
+                                           keys are hash values and values are
+                                           list of duplicate file paths
+                                          -pprint prints sets of duplicate file 
+                                           paths each in it's line where sets
+                                           are separated by blank newline
 -m <directory>, --move=<directory>        move duplicate files to directory
                                           (used with move action)
                                           [default: ./dups]
@@ -136,11 +147,17 @@ def main():
         print('Invalid block size "%s"' % args['--block-size'])
         sys.exit(1)
 
-    if action == 'print':
+    if action == 'print' or action == 'pprint':
         dups = file_dups(topdirs, args['--digest-alg'], args['--block-size'])
         spam = dict(dups)
         if spam:
-            print(json.dumps(spam, indent=4))
+            if action == 'pprint':
+                for h, fpaths in _dict_iter_items(spam):
+                    for path in fpaths:
+                        print(path)
+                    print('')
+            else:
+                print(json.dumps(spam, indent=4))
     elif action == 'move':
         mv_file_dups(topdirs, args['--digest-alg'], args['--block-size'],
                      args['--move'])
