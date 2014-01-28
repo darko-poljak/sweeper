@@ -103,12 +103,17 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
                 shutil.move(f, dest_dir)
 
 
-def iter_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
-    """Yield list of duplicate files when found in specified directory list.
+def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5', block_size=4096):
+    """Yield duplicate files when found in specified directory list.
+       If rethash is True then tuple hash value and duplicate paths list is 
+       returned, otherwise duplicate paths list is returned.
     """
     dups = file_dups(topdirs, hashalg, block_size)
-    for fpaths in dups.itervalues():
-        yield fpaths
+    for hash, fpaths in _dict_iter_items:
+        if rethash:
+            yield (hash, fpaths)
+        else:
+            yield fpaths
 
 
 def main():
