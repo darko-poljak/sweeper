@@ -109,9 +109,9 @@ def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5', block_size=4096
        returned, otherwise duplicate paths list is returned.
     """
     dups = file_dups(topdirs, hashalg, block_size)
-    for hash, fpaths in _dict_iter_items:
+    for hash_, fpaths in _dict_iter_items(dups):
         if rethash:
-            yield (hash, fpaths)
+            yield (hash_, fpaths)
         else:
             yield fpaths
 
