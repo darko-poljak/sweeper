@@ -28,7 +28,7 @@ Perform custom action
     from sweeper import iter_file_dups
     for files in iter_file_dups(['images']):
         for fname in files:
-            print('found duplicate file with name: %s' % fname)
+            print('found duplicate file with name: {}'.format(fname))
 
 As script::
 
