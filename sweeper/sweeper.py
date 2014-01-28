@@ -15,16 +15,17 @@ Options:
                                           file's content [default: 4096]
 -d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
 -a <action>, --action=<action>            action on duplicate files (pprint,
-                                          print, remove, move) [default: pprint]
-                                          -remove removes duplicate files except
-                                           first found
-                                          -move moves duplicate files to 
+                                          print, remove, move)
+                                          [default: pprint]
+                                          -remove removes duplicate files
+                                           except first found
+                                          -move moves duplicate files to
                                            duplicates driectory, except first
                                            found
                                           -print prints result directory where
                                            keys are hash values and values are
                                            list of duplicate file paths
-                                          -pprint prints sets of duplicate file 
+                                          -pprint prints sets of duplicate file
                                            paths each in it's line where sets
                                            are separated by blank newline
 -m <directory>, --move=<directory>        move duplicate files to directory
@@ -114,9 +115,10 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
                 shutil.move(f, dest_dir)
 
 
-def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5', block_size=4096):
+def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5',
+                   block_size=4096):
     """Yield duplicate files when found in specified directory list.
-       If rethash is True then tuple hash value and duplicate paths list is 
+       If rethash is True then tuple hash value and duplicate paths list is
        returned, otherwise duplicate paths list is returned.
     """
     dups = file_dups(topdirs, hashalg, block_size)
