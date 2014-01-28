@@ -2,7 +2,7 @@
 # Author: Darko Poljak <darko.poljak@gmail.com>
 # License: GPLv3
 
-"""Sweeper.
+"""sweeper 0.4.0
 
 Usage: sweeper.py [options] [<directory>...]
 
@@ -11,18 +11,31 @@ Arguments:
 
 Options:
 -h, --help                                show this screen
+-v, --version                             show version and exit
 -b <blocksize>, --block-size=<blocksize>  size of block used when reading
                                           file's content [default: 4096]
 -d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
--a <action>, --action=<action>            action on duplicate files (print,
-                                          remove, move) [default: print]
+-a <action>, --action=<action>            action on duplicate files (pprint,
+                                          print, remove, move)
+                                          [default: pprint]
+                                          -remove removes duplicate files
+                                           except first found
+                                          -move moves duplicate files to
+                                           duplicates driectory, except first
+                                           found
+                                          -print prints result directory where
+                                           keys are hash values and values are
+                                           list of duplicate file paths
+                                          -pprint prints sets of duplicate file
+                                           paths each in it's line where sets
+                                           are separated by blank newline
 -m <directory>, --move=<directory>        move duplicate files to directory
                                           (used with move action)
                                           [default: ./dups]
 """
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 __license__ = 'GPLv3'
 
 __all__ = [
@@ -95,7 +108,7 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
     if not os.path.isdir(dest_dir):
-        raise OSError('%s is not a directory' % dest_dir)
+        raise OSError('{} is not a directory'.format(dest_dir))
     import shutil
     for files in do_with_file_dups(topdirs, hashalg, block_size):
         for i, f in enumerate(files):
@@ -103,12 +116,18 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
                 shutil.move(f, dest_dir)
 
 
-def iter_file_dups(topdirs=['./'], hashalg='md5', block_size=4096):
-    """Yield list of duplicate files when found in specified directory list.
+def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5',
+                   block_size=4096):
+    """Yield duplicate files when found in specified directory list.
+       If rethash is True then tuple hash value and duplicate paths list is
+       returned, otherwise duplicate paths list is returned.
     """
     dups = file_dups(topdirs, hashalg, block_size)
-    for fpaths in dups.itervalues():
-        yield fpaths
+    for hash_, fpaths in _dict_iter_items(dups):
+        if rethash:
+            yield (hash_, fpaths)
+        else:
+            yield fpaths
 
 
 def main():
@@ -128,21 +147,31 @@ def main():
         bs = int(args['--block-size'])
         args['--block-size'] = bs
     except ValueError:
-        print('Invalid block size "%s"' % args['--block-size'])
+        print('Invalid block size "{}"'.format(args['--block-size']))
         sys.exit(1)
 
-    if action == 'print':
+    if args['--version']:
+        print("sweeper {}".format(__version__))
+        return
+
+    if action == 'print' or action == 'pprint':
         dups = file_dups(topdirs, args['--digest-alg'], args['--block-size'])
         spam = dict(dups)
         if spam:
-            print(json.dumps(spam, indent=4))
+            if action == 'pprint':
+                for h, fpaths in _dict_iter_items(spam):
+                    for path in fpaths:
+                        print(path)
+                    print('')
+            else:
+                print(json.dumps(spam, indent=4))
     elif action == 'move':
         mv_file_dups(topdirs, args['--digest-alg'], args['--block-size'],
                      args['--move'])
     elif action == 'remove':
         rm_file_dups(topdirs, args['--digest-alg'], args['--block-size'])
     else:
-        print('Invalid action "%s"' % action)
+        print('Invalid action "{}"'.format(action))
 
 
 # if used as script call main function
