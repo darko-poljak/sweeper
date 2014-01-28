@@ -3,7 +3,7 @@
 # License: GPLv3
 
 import unittest
-from sweeper import file_dups
+from sweeper import file_dups, iter_file_dups
 import os
 
 mydir = os.path.dirname(os.path.realpath(__file__))
@@ -22,6 +22,15 @@ class TestSweeper(unittest.TestCase):
         dups = file_dups([os.path.join(mydir, 'testfiles_nodups')], 'md5')
         for h, flist in dups.items():
             self.assertTrue(len(flist) == 1)
+
+    def test_iter_fule_dups_rethash(self):
+        for item in iter_file_dups([os.path.join(mydir, 'testfiles_dups')],
+                                   rethash=True):
+            self.assertTrue(type(item).__name__ == 'tuple')
+
+    def test_iter_fule_dups_norethash(self):
+        for item in iter_file_dups([os.path.join(mydir, 'testfiles_dups')]):
+            self.assertTrue(type(item).__name__ == 'list')
 
 
 if __name__ == '__main__':
