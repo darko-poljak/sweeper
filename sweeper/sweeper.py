@@ -2,7 +2,7 @@
 # Author: Darko Poljak <darko.poljak@gmail.com>
 # License: GPLv3
 
-"""Sweeper.
+"""sweeper 0.4.0
 
 Usage: sweeper.py [options] [<directory>...]
 
@@ -11,6 +11,7 @@ Arguments:
 
 Options:
 -h, --help                                show this screen
+-v, --version                             show version and exit
 -b <blocksize>, --block-size=<blocksize>  size of block used when reading
                                           file's content [default: 4096]
 -d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
@@ -34,7 +35,7 @@ Options:
 """
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 __license__ = 'GPLv3'
 
 __all__ = [
@@ -148,6 +149,10 @@ def main():
     except ValueError:
         print('Invalid block size "%s"' % args['--block-size'])
         sys.exit(1)
+
+    if args['--version']:
+        print("sweeper %s" % __version__)
+        return
 
     if action == 'print' or action == 'pprint':
         dups = file_dups(topdirs, args['--digest-alg'], args['--block-size'])
