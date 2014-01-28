@@ -108,7 +108,7 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
     if not os.path.isdir(dest_dir):
-        raise OSError('%s is not a directory' % dest_dir)
+        raise OSError('{} is not a directory'.format(dest_dir))
     import shutil
     for files in do_with_file_dups(topdirs, hashalg, block_size):
         for i, f in enumerate(files):
@@ -147,11 +147,11 @@ def main():
         bs = int(args['--block-size'])
         args['--block-size'] = bs
     except ValueError:
-        print('Invalid block size "%s"' % args['--block-size'])
+        print('Invalid block size "{}"'.format(args['--block-size']))
         sys.exit(1)
 
     if args['--version']:
-        print("sweeper %s" % __version__)
+        print("sweeper {}".format(__version__))
         return
 
     if action == 'print' or action == 'pprint':
@@ -171,7 +171,7 @@ def main():
     elif action == 'remove':
         rm_file_dups(topdirs, args['--digest-alg'], args['--block-size'])
     else:
-        print('Invalid action "%s"' % action)
+        print('Invalid action "{}"'.format(action))
 
 
 # if used as script call main function
