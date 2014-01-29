@@ -1,1 +1,2 @@
 add logging, status file examined, etc.?
+add argument mv, rm action: preserve directory prefix
