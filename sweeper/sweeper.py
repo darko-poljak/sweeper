@@ -2,7 +2,7 @@
 # Author: Darko Poljak <darko.poljak@gmail.com>
 # License: GPLv3
 
-"""sweeper 0.4.0
+"""sweeper 0.4.1
 
 Usage: sweeper.py [options] [<directory>...]
 

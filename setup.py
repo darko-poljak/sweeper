@@ -8,7 +8,7 @@ def read(fname):
 
 setup(
     name='sweeper',
-    version='0.4.0',
+    version='0.4.1',
     author='Darko Poljak',
     author_email='darko.poljak@gmail.com',
     description='Find duplicate files and perform action.',
