@@ -1,0 +1,2 @@
+* Play it safe and add byte by byte comparison option for hash dup files?
+  Or use one more, different, hash algorithm?
