@@ -45,6 +45,8 @@ Options:
                                           gathering
 """
 
+from __future__ import print_function
+
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
 __version__ = '0.4.0'
 __license__ = 'GPLv3'
