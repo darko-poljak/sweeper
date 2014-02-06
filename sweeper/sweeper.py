@@ -59,6 +59,7 @@ import sys
 import hashlib
 import os
 from collections import defaultdict
+from functools import partial
 
 
 # some differences in python versions
@@ -91,6 +92,36 @@ def _uniq_list(list_):
     return result
 
 
+def _gather_file_list(dirs):
+    '''Gather file paths in directory list dirs.
+       Return tuple (count, files) where count is files
+       list length and files is list of file paths in
+       specified directories.
+    '''
+    count = 0
+    files = []
+    for dir_ in dirs:
+        for dirpath, dirnames, filenames in os.walk(dir_):
+            count += len(filenames)
+            files += [os.path.join(dirpath, fname) for fname in filenames]
+    return (count, files)
+
+
+# iter through file paths in files list
+def _files_iter_from_list(files):
+    for fpath in files:
+        yield fpath
+
+
+# iter through file paths by os.walking
+def _files_iter_from_disk(topdirs):
+    for topdir in topdirs:
+        for dirpath, dirnames, filenames in os.walk(topdir):
+            for fname in filenames:
+                fpath = os.path.join(dirpath, fname)
+                yield fpath
+
+
 def file_dups(topdirs=['./'], hashalg='md5', block_size=4096, verbose=False):
     """Find duplicate files in directory list. Return directory
        with keys equal to file hash value and value as list of
@@ -98,25 +129,24 @@ def file_dups(topdirs=['./'], hashalg='md5', block_size=4096, verbose=False):
     """
     dups = defaultdict(list)
     if verbose:
-        print('counting...', end='')
+        print('gathering and counting files...', end='')
         sys.stdout.flush()
-        count = 0
-        for topdir in topdirs:
-            for _, _, filenames in os.walk(topdir):
-                count += len(filenames)
+        count, files = _gather_file_list(topdirs)
         current = 1
         print(count)
-    for topdir in topdirs:
-        for dirpath, dirnames, filenames in os.walk(topdir):
-            for fname in filenames:
-                if verbose:
-                    print('\rprocessing file {0}/{1}'.format(current, count),
-                          end='')
-                    sys.stdout.flush()
-                    current += 1
-                fpath = os.path.join(dirpath, fname)
-                hexmd = _filehash(fpath, hashalg, block_size)
-                dups[hexmd].append(fpath)
+        _files_iter = partial(_files_iter_from_list, files)
+    else:
+        _files_iter = partial(_files_iter_from_disk, topdirs)
+
+    for fpath in _files_iter():
+        if verbose:
+            print('\rprocessing file {0}/{1}'.format(current, count),
+                  end='')
+            sys.stdout.flush()
+            current += 1
+        hexmd = _filehash(fpath, hashalg, block_size)
+        dups[hexmd].append(fpath)
+
     if verbose:
         print('')
     result = {}
