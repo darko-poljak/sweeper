@@ -86,6 +86,8 @@ else:
     def _dict_iter_keys(d):
         return d.iterkeys()
 
+    range = xrange
+
 
 def _filehash(filepath, hashalg, block_size):
     """Calculate secure hash for given file content using
@@ -118,7 +120,9 @@ def _gather_file_list(dirs):
     for dir_ in dirs:
         for dirpath, dirnames, filenames in os.walk(dir_):
             count += len(filenames)
-            files += [os.path.join(dirpath, fname) for fname in filenames]
+            # replace fpath with realpath value (eliminate symbolic links)
+            files += [os.path.realpath(os.path.join(dirpath, fname))
+                      for fname in filenames]
     return (count, files)
 
 
@@ -133,7 +137,8 @@ def _files_iter_from_disk(topdirs):
     for topdir in topdirs:
         for dirpath, dirnames, filenames in os.walk(topdir):
             for fname in filenames:
-                fpath = os.path.join(dirpath, fname)
+                # replace fpath with realpath value (eliminate symbolic links)
+                fpath = os.path.realpath(os.path.join(dirpath, fname))
                 yield fpath
 
 
@@ -165,6 +170,9 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
        by byte comparison for hash duplicate files.
     """
     dups = defaultdict(list)
+    # replace dir paths with realpath value (eliminate symbolic links)
+    for i in range(len(topdirs)):
+        topdirs[i] = os.path.realpath(topdirs[i])
     if verbose:
         if safe_mode:
             print('safe mode is on')
