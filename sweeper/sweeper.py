@@ -61,7 +61,8 @@ __version__ = '0.4.1'
 __license__ = 'GPLv3'
 
 __all__ = [
-    'file_dups', 'rm_file_dups', 'mv_file_dups', 'iter_file_dups'
+    'file_dups', 'rm_file_dups', 'mv_file_dups', 'iter_file_dups',
+    'file_dups_immediate'
 ]
 
 import sys
@@ -226,6 +227,48 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
         if len(uniq_v) > 1:
             result[k] = uniq_v
     return result
+
+
+def file_dups_immediate(topdirs=['./'], hashalgs=['md5'], block_size=4096,
+                        safe_mode=False):
+    """Find duplicate files in directory list iterator.
+       Yield tuple of file path, hash tuple and list of duplicate files
+       as soon as duplicate file is found (newly found file is
+       included in the list).
+       This means that not all duplicate files are returned.
+       Same hash value and sublist could be returned later
+       if file with same content is found.
+       If safe_mode is true then you want to play safe: do byte
+       by byte comparison for hash duplicate files.
+    """
+    # internaly, file dups dict is still maintained
+    dups = defaultdict(list)
+    # replace dir paths with realpath value (eliminate symbolic links)
+    for i in range(len(topdirs)):
+        topdirs[i] = os.path.realpath(topdirs[i])
+    _files_iter = partial(_files_iter_from_disk, topdirs)
+
+    for fpath in _files_iter():
+        hexmds = [_filehash(fpath, h, block_size) for h in hashalgs]
+        hexmd = tuple(hexmds)
+        dup_files = dups[hexmd]
+        # there were dup list elements (used for yield)
+        had_dup_list = True if dup_files else False
+        files_equals = False
+        if safe_mode:
+            if dup_files:
+                for f in dup_files:
+                    if _fbequal(f, fpath):
+                        files_equals = True
+                        break
+            else:  # when list is empty in safe mode
+                files_equals = True
+        else:
+            files_equals = True  # when safe mode is off
+        if files_equals:
+            dups[hexmd].append(fpath)
+        if files_equals and had_dup_list:
+            yield (fpath, hexmd, dups[hexmd])
 
 
 def _extract_files_for_action(topdirs, hashalgs, block_size, keep_prefix,
