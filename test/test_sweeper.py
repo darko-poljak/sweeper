@@ -32,6 +32,16 @@ class TestSweeper(unittest.TestCase):
         for item in iter_file_dups([os.path.join(mydir, 'testfiles_dups')]):
             self.assertTrue(type(item).__name__ == 'list')
 
+    # does not actually test safe_mode, we would need to find
+    # hash collision
+    def test_file_dups_safe_mode(self):
+        dups = file_dups([os.path.join(mydir, 'testfiles_dups')],
+                         safe_mode=True)
+        for h, flist in dups.items():
+            if len(flist) > 1:
+                dups_exist = True
+        self.assertTrue(dups_exist)
+
 
 if __name__ == '__main__':
     unittest.main()
