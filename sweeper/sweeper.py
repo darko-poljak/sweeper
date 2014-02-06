@@ -42,10 +42,16 @@ Options:
 -s, --simulate                            if action is remove or move just
                                           simulate action by printing, do not
                                           actually perform the action
--V, --verbose                             print more info, note that verbosity
-                                          will slow down sweeper due to text
-                                          printing and additional information
-                                          gathering
+-V, --verbose                             print more info
+                                          note that verbosity will slow down
+                                          sweeper due to text printing and
+                                          gathering additional information
+-S, --safe-mode                           enable safe mode: compare hash
+                                          duplicate files byte by byte too
+                                          note that it will further slow down
+                                          sweeper but will overcome hash
+                                          collisions (although this is
+                                          unlikely)
 """
 
 from __future__ import print_function
@@ -131,13 +137,37 @@ def _files_iter_from_disk(topdirs):
                 yield fpath
 
 
-def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False):
+def _fbequal(fpath1, fpath2):
+    '''Compare files byte by byte. If files are equal return True,
+       False otherwise.
+       fpath1 and fpath2 are file paths.
+    '''
+    with open(fpath1, "rb") as f1, open(fpath2, "rb") as f2:
+        while True:
+            b1 = f1.read(1)
+            b2 = f2.read(1)
+            if b1 != b2:  # different bytes
+                return False
+            if not b1 or not b2:  # end in one or both files
+                break
+    if not b1 and not b2:  # end in both files, files are equal
+        return True
+    # end in one file but not in the other, files aren't equal
+    return False
+
+
+def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
+              safe_mode=False):
     """Find duplicate files in directory list. Return directory
        with keys equal to file hash value and value as list of
        file paths whose content is the same.
+       If safe_mode is true then you want to play safe: do byte
+       by byte comparison for hash duplicate files.
     """
     dups = defaultdict(list)
     if verbose:
+        if safe_mode:
+            print('safe mode is on')
         print('gathering and counting files...', end='')
         sys.stdout.flush()
         count, files = _gather_file_list(topdirs)
@@ -149,13 +179,36 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False):
 
     for fpath in _files_iter():
         if verbose:
-            print('\rprocessing file {0}/{1}'.format(current, count),
+            print('\rprocessing file {0}/{1}: calc hash'.format(current,
+                                                                count),
                   end='')
             sys.stdout.flush()
-            current += 1
         hexmds = [_filehash(fpath, h, block_size) for h in hashalgs]
         hexmd = tuple(hexmds)
-        dups[hexmd].append(fpath)
+        dup_files = dups[hexmd]
+        files_equals = False
+        if safe_mode:
+            if dup_files:
+                if verbose:
+                    print('\rprocessing file {0}/{1}: byte cmp'.format(current,
+                                                                       count),
+                          end='')
+                    sys.stdout.flush()
+                for f in dup_files:
+                    if _fbequal(f, fpath):
+                        files_equals = True
+                        break
+                if not files_equals:
+                    print('\nsame hash value {} but not same bytes for file {}'
+                          ' with files {}'.format(hexmd, fpath, dup_files))
+            else:  # when list is empty in safe mode
+                files_equals = True
+        else:
+            files_equals = True  # when safe mode is off
+        if verbose:
+            current += 1
+        if files_equals:
+            dups[hexmd].append(fpath)
 
     if verbose:
         print('')
@@ -168,9 +221,10 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False):
 
 
 def _extract_files_for_action(topdirs, hashalgs, block_size, keep_prefix,
-                              verbose):
+                              verbose, safe_mode):
     for files in iter_file_dups(topdirs=topdirs, hashalgs=hashalgs,
-                                block_size=block_size, verbose=verbose):
+                                block_size=block_size, verbose=verbose,
+                                safe_mode=safe_mode):
         found = False
         if keep_prefix:
             result = []
@@ -185,17 +239,20 @@ def _extract_files_for_action(topdirs, hashalgs, block_size, keep_prefix,
 
 
 def rm_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
-                 simulate=False, keep_prefix=None, verbose=False):
+                 simulate=False, keep_prefix=None, verbose=False,
+                 safe_mode=False):
     """Remove duplicate files found in specified directory list.
        If keep_prefix is specified then first file with that path
        prefix found is kept in the original directory.
        Otherwise first file in list is kept in the original directory.
        If simulate is True then only print the action, do not actually
        perform it.
+       If safe_mode is true then do byte by byte comparison for
+       hash duplicate files.
     """
     for dups, extracted in _extract_files_for_action(topdirs, hashalgs,
                                                      block_size, keep_prefix,
-                                                     verbose):
+                                                     verbose, safe_mode):
         if simulate or verbose:
             print('found duplicates: \n{}'.format(dups))
         for f in extracted:
@@ -207,13 +264,15 @@ def rm_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
 
 def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
                  dest_dir='dups', simulate=False, keep_prefix=None,
-                 verbose=False):
+                 verbose=False, safe_mode=False):
     """Move duplicate files found in specified directory list.
        If keep_prefix is specified then first file with that path
        prefix found is kept in the original directory.
        Otherwise first file in list is kept in the original directory.
        If simulate is True then only print the action, do not actually
        perform it.
+       If safe_mode is true then do byte by byte comparison for
+       hash duplicate files.
     """
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
@@ -222,7 +281,7 @@ def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
     import shutil
     for dups, extracted in _extract_files_for_action(topdirs, hashalgs,
                                                      block_size, keep_prefix,
-                                                     verbose):
+                                                     verbose, safe_mode):
         if simulate or verbose:
             print('found duplicates: \n{}'.format(dups))
         for f in extracted:
@@ -233,12 +292,12 @@ def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
 
 
 def iter_file_dups(topdirs=['./'], rethash=False, hashalgs=['md5'],
-                   block_size=4096, verbose=False):
+                   block_size=4096, verbose=False, safe_mode=False):
     """Yield duplicate files when found in specified directory list.
        If rethash is True then tuple hash value and duplicate paths list is
        returned, otherwise duplicate paths list is returned.
     """
-    dups = file_dups(topdirs, hashalgs, block_size, verbose)
+    dups = file_dups(topdirs, hashalgs, block_size, verbose, safe_mode)
     for hash_, fpaths in _dict_iter_items(dups):
         if rethash:
             yield (hash_, fpaths)
@@ -290,12 +349,14 @@ def main():
     simulate = args['--simulate']
     keep_prefix = args['--keep']
     dest_dir = args['--move']
+    safe_mode = args['--safe-mode']
 
     if action == 'print' or action == 'pprint':
         dups = file_dups(topdirs=topdirs,
                          hashalgs=hashalgs,
                          block_size=block_size,
-                         verbose=verbose)
+                         verbose=verbose,
+                         safe_mode=safe_mode)
         # defaultdict(list) -> dict
         spam = dict(dups)
         if spam:
@@ -314,13 +375,15 @@ def main():
                      dest_dir=dest_dir,
                      simulate=simulate,
                      keep_prefix=keep_prefix,
-                     verbose=verbose)
+                     verbose=verbose,
+                     safe_mode=safe_mode)
     elif action == 'remove':
         rm_file_dups(topdirs=topdirs, hashalgs=hashalgs,
                      block_size=block_size,
                      simulate=simulate,
                      keep_prefix=-keep_prefix,
-                     verbose=verbose)
+                     verbose=verbose,
+                     safe_mode=safe_mode)
     else:
         print('Invalid action "{}"'.format(action))
 
