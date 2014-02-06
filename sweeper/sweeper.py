@@ -206,7 +206,7 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
                     if _fbequal(f, fpath):
                         files_equals = True
                         break
-                if not files_equals:
+                if verbose and not files_equals:
                     print('\nsame hash value {} but not same bytes for file {}'
                           ' with files {}'.format(hexmd, fpath, dup_files))
             else:  # when list is empty in safe mode
