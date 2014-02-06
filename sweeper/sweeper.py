@@ -2,9 +2,9 @@
 # Author: Darko Poljak <darko.poljak@gmail.com>
 # License: GPLv3
 
-"""sweeper 0.4.1
+"""{0} {1}
 
-Usage: sweeper.py [options] [<directory>...]
+Usage: {0} [options] [<directory>...]
 
 Arguments:
     <directory> directory path to scan for files
@@ -14,7 +14,10 @@ Options:
 -v, --version                             show version and exit
 -b <blocksize>, --block-size=<blocksize>  size of block used when reading
                                           file's content [default: 4096]
--d <hashalg>, --digest-alg=<hashalg>      secure hash algorithm [default: md5]
+-d <hashalgs>, --digest-algs=<hashalgs>   secure hash algorithm comma separated
+                                          list [default: md5]
+                                          note that multiple hashes will slow
+                                          down sweeper
 -a <action>, --action=<action>            action on duplicate files (pprint,
                                           print, remove, move)
                                           [default: pprint]
@@ -48,7 +51,7 @@ Options:
 from __future__ import print_function
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __license__ = 'GPLv3'
 
 __all__ = [
@@ -67,9 +70,15 @@ from functools import partial
 if sys.version_info[0] == 3:
     def _dict_iter_items(d):
         return d.items()
+
+    def _dict_iter_keys(d):
+        return d.keys()
 else:
     def _dict_iter_items(d):
         return d.iteritems()
+
+    def _dict_iter_keys(d):
+        return d.iterkeys()
 
 
 def _filehash(filepath, hashalg, block_size):
@@ -122,7 +131,7 @@ def _files_iter_from_disk(topdirs):
                 yield fpath
 
 
-def file_dups(topdirs=['./'], hashalg='md5', block_size=4096, verbose=False):
+def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False):
     """Find duplicate files in directory list. Return directory
        with keys equal to file hash value and value as list of
        file paths whose content is the same.
@@ -144,7 +153,8 @@ def file_dups(topdirs=['./'], hashalg='md5', block_size=4096, verbose=False):
                   end='')
             sys.stdout.flush()
             current += 1
-        hexmd = _filehash(fpath, hashalg, block_size)
+        hexmds = [_filehash(fpath, h, block_size) for h in hashalgs]
+        hexmd = tuple(hexmds)
         dups[hexmd].append(fpath)
 
     if verbose:
@@ -157,9 +167,9 @@ def file_dups(topdirs=['./'], hashalg='md5', block_size=4096, verbose=False):
     return result
 
 
-def _extract_files_for_action(topdirs, hashalg, block_size, keep_prefix,
+def _extract_files_for_action(topdirs, hashalgs, block_size, keep_prefix,
                               verbose):
-    for files in iter_file_dups(topdirs=topdirs, hashalg=hashalg,
+    for files in iter_file_dups(topdirs=topdirs, hashalgs=hashalgs,
                                 block_size=block_size, verbose=verbose):
         found = False
         if keep_prefix:
@@ -174,7 +184,7 @@ def _extract_files_for_action(topdirs, hashalg, block_size, keep_prefix,
         yield (files, result)
 
 
-def rm_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
+def rm_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
                  simulate=False, keep_prefix=None, verbose=False):
     """Remove duplicate files found in specified directory list.
        If keep_prefix is specified then first file with that path
@@ -183,9 +193,9 @@ def rm_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
        If simulate is True then only print the action, do not actually
        perform it.
     """
-    for dups, extracted in _extract_files_for_action(topdirs, hashalg,
-                                                     block_size,
-                                                     keep_prefix, verbose):
+    for dups, extracted in _extract_files_for_action(topdirs, hashalgs,
+                                                     block_size, keep_prefix,
+                                                     verbose):
         if simulate or verbose:
             print('found duplicates: \n{}'.format(dups))
         for f in extracted:
@@ -195,7 +205,7 @@ def rm_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
                 os.remove(f)
 
 
-def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
+def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
                  dest_dir='dups', simulate=False, keep_prefix=None,
                  verbose=False):
     """Move duplicate files found in specified directory list.
@@ -210,9 +220,9 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
     if not os.path.isdir(dest_dir):
         raise OSError('{} is not a directory'.format(dest_dir))
     import shutil
-    for dups, extracted in _extract_files_for_action(topdirs, hashalg,
-                                                     block_size,
-                                                     keep_prefix, verbose):
+    for dups, extracted in _extract_files_for_action(topdirs, hashalgs,
+                                                     block_size, keep_prefix,
+                                                     verbose):
         if simulate or verbose:
             print('found duplicates: \n{}'.format(dups))
         for f in extracted:
@@ -222,18 +232,30 @@ def mv_file_dups(topdirs=['./'], hashalg='md5', block_size=4096,
                 shutil.move(f, dest_dir)
 
 
-def iter_file_dups(topdirs=['./'], rethash=False, hashalg='md5',
+def iter_file_dups(topdirs=['./'], rethash=False, hashalgs=['md5'],
                    block_size=4096, verbose=False):
     """Yield duplicate files when found in specified directory list.
        If rethash is True then tuple hash value and duplicate paths list is
        returned, otherwise duplicate paths list is returned.
     """
-    dups = file_dups(topdirs, hashalg, block_size, verbose)
+    dups = file_dups(topdirs, hashalgs, block_size, verbose)
     for hash_, fpaths in _dict_iter_items(dups):
         if rethash:
             yield (hash_, fpaths)
         else:
             yield fpaths
+
+
+def _remap_keys_to_str(d):
+    '''Iterator that remaps dictionary keys to string in case keys are tuple
+       or list. Leave it unchanged otherwise.
+    '''
+    for k in _dict_iter_keys(d):
+        if isinstance(k, tuple) or isinstance(k, list):
+            key = ','.join(k)
+        else:
+            key = k
+        yield (key, d[k])
 
 
 def main():
@@ -242,7 +264,8 @@ def main():
     import json
     from docopt import docopt
 
-    args = docopt(__doc__, version=" ".join(('sweeper', __version__)))
+    args = docopt(__doc__.format(sys.argv[0], __version__),
+                  version=" ".join(('sweeper', __version__)))
 
     topdirs = args['<directory>']
     if not topdirs:
@@ -258,35 +281,45 @@ def main():
     except ValueError:
         print('Invalid block size "{}"'.format(args['--block-size']))
         sys.exit(1)
+    hashalgs = args['--digest-algs'].split(',')
+    hashalgs_uniq = _uniq_list(hashalgs)
+    if len(hashalgs) != len(hashalgs_uniq):
+        print('Duplicate hash algorithms specified')
+        sys.exit(1)
+    block_size = args['--block-size']
+    simulate = args['--simulate']
+    keep_prefix = args['--keep']
+    dest_dir = args['--move']
 
     if action == 'print' or action == 'pprint':
         dups = file_dups(topdirs=topdirs,
-                         hashalg=args['--digest-alg'],
-                         block_size=args['--block-size'],
+                         hashalgs=hashalgs,
+                         block_size=block_size,
                          verbose=verbose)
         # defaultdict(list) -> dict
         spam = dict(dups)
         if spam:
             if action == 'pprint':
-                for h, fpaths in _dict_iter_items(spam):
+                for _, fpaths in _dict_iter_items(spam):
                     for path in fpaths:
                         print(path)
                     if fpaths:
                         print('')
             else:
-                print(json.dumps(spam, indent=4))
+                print(json.dumps({k: v for k, v in _remap_keys_to_str(spam)},
+                                 indent=4))
     elif action == 'move':
-        mv_file_dups(topdirs=topdirs, hashalg=args['--digest-alg'],
-                     block_size=args['--block-size'],
-                     dest_dir=args['--move'],
-                     simulate=args['--simulate'],
-                     keep_prefix=args['--keep'],
+        mv_file_dups(topdirs=topdirs, hashalgs=hashalgs,
+                     block_size=block_size,
+                     dest_dir=dest_dir,
+                     simulate=simulate,
+                     keep_prefix=keep_prefix,
                      verbose=verbose)
     elif action == 'remove':
-        rm_file_dups(topdirs=topdirs, hashalg=args['--digest-alg'],
-                     block_size=args['--block-size'],
-                     simulate=args['--simulate'],
-                     keep_prefix=args['--keep'],
+        rm_file_dups(topdirs=topdirs, hashalgs=hashalgs,
+                     block_size=block_size,
+                     simulate=simulate,
+                     keep_prefix=-keep_prefix,
                      verbose=verbose)
     else:
         print('Invalid action "{}"'.format(action))
