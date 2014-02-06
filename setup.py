@@ -6,9 +6,12 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+import sweeper.sweeper as sw
+
+
 setup(
     name='sweeper',
-    version='0.4.1',
+    version=sw.__version__,
     author='Darko Poljak',
     author_email='darko.poljak@gmail.com',
     description='Find duplicate files and perform action.',
