@@ -3,7 +3,7 @@
 # License: GPLv3
 
 import unittest
-from sweeper import file_dups, iter_file_dups
+from sweeper import file_dups, iter_file_dups, file_dups_immediate
 import os
 
 mydir = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +40,14 @@ class TestSweeper(unittest.TestCase):
         for h, flist in dups.items():
             if len(flist) > 1:
                 dups_exist = True
+        self.assertTrue(dups_exist)
+
+    def test_file_dups_immediate_dups(self):
+        it = file_dups_immediate([os.path.join(mydir, 'testfiles_dups')])
+        dups_exist = False
+        for x in it:
+            dups_exist = True
+            break
         self.assertTrue(dups_exist)
 
 
