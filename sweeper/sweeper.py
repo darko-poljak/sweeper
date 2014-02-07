@@ -57,12 +57,11 @@ Options:
 from __future__ import print_function
 
 __author__ = 'Darko Poljak <darko.poljak@gmail.com>'
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 __license__ = 'GPLv3'
 
 __all__ = [
-    'file_dups', 'rm_file_dups', 'mv_file_dups', 'iter_file_dups',
-    'file_dups_immediate'
+    'file_dups', 'rm_file_dups', 'mv_file_dups', 'iter_file_dups'
 ]
 
 import sys
@@ -80,12 +79,18 @@ if sys.version_info[0] == 3:
 
     def _dict_iter_keys(d):
         return d.keys()
+
+    def _dict_iter_values(d):
+        return d.values()
 else:
     def _dict_iter_items(d):
         return d.iteritems()
 
     def _dict_iter_keys(d):
         return d.iterkeys()
+
+    def _dict_iter_values(d):
+        return d.itervalues()
 
     range = xrange
 
@@ -221,6 +226,7 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
 
     if verbose:
         print('')
+    # make result dict with unique file paths list
     result = {}
     for k, v in _dict_iter_items(dups):
         uniq_v = _uniq_list(v)
@@ -229,14 +235,15 @@ def file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096, verbose=False,
     return result
 
 
-def file_dups_immediate(topdirs=['./'], hashalgs=['md5'], block_size=4096,
-                        safe_mode=False):
-    """Find duplicate files in directory list iterator.
+def iter_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
+                   safe_mode=False):
+    """Find duplicate files in directory list.
        Yield tuple of file path, hash tuple and list of duplicate files
-       as soon as duplicate file is found (newly found file is
-       included in the list).
-       This means that not all duplicate files are returned.
-       Same hash value and sublist could be returned later
+       as soon as duplicate file is found.
+       Newly found file is not included in the list at the yield time,
+       but is appended later before next yield.
+       This means that not all duplicate files are returned with any
+       return value. Same hash value and sublist could be returned later
        if file with same content is found.
        If safe_mode is true then you want to play safe: do byte
        by byte comparison for hash duplicate files.
@@ -253,29 +260,25 @@ def file_dups_immediate(topdirs=['./'], hashalgs=['md5'], block_size=4096,
         hexmd = tuple(hexmds)
         dup_files = dups[hexmd]
         # there were dup list elements (used for yield)
-        had_dup_list = True if dup_files else False
-        files_equals = False
-        if safe_mode:
-            if dup_files:
-                for f in dup_files:
-                    if _fbequal(f, fpath):
-                        files_equals = True
-                        break
-            else:  # when list is empty in safe mode
-                files_equals = True
-        else:
-            files_equals = True  # when safe mode is off
+        if safe_mode and dup_files:
+            # compare only with first file in dup_files
+            # all files in dup_files list are already content equal
+            files_equals =  _fbequal(dup_files[0], fpath)
+        else:  # when list is emtpy in safe mode or when safe mode is off
+            files_equals = True
         if files_equals:
+            # yield only if current dup files list isn't empty
+            if dup_files:
+                yield (fpath, hexmd, dups[hexmd])
+            # finally append newly found file to dup list
             dups[hexmd].append(fpath)
-        if files_equals and had_dup_list:
-            yield (fpath, hexmd, dups[hexmd])
 
 
 def _extract_files_for_action(topdirs, hashalgs, block_size, keep_prefix,
                               verbose, safe_mode):
-    for files in iter_file_dups(topdirs=topdirs, hashalgs=hashalgs,
-                                block_size=block_size, verbose=verbose,
-                                safe_mode=safe_mode):
+    for files in _dict_iter_values(file_dups(topdirs=topdirs,
+                                   hashalgs=hashalgs, block_size=block_size,
+                                   verbose=verbose, safe_mode=safe_mode)):
         found = False
         if keep_prefix:
             result = []
@@ -325,11 +328,19 @@ def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
        If safe_mode is true then do byte by byte comparison for
        hash duplicate files.
     """
-    if not os.path.exists(dest_dir):
-        os.mkdir(dest_dir)
-    if not os.path.isdir(dest_dir):
-        raise OSError('{} is not a directory'.format(dest_dir))
     import shutil
+
+    if not os.path.exists(dest_dir):
+        if simulate:
+            print('mkdir {}'.format(dest_dir))
+        else:
+            os.mkdir(dest_dir)
+    elif not os.path.isdir(dest_dir):
+        errmsg = '{} is not a directory'.format(dest_dir)
+        if simulate:
+            print('would raise:', errmsg)
+        else:
+            raise OSError(errmsg)
     for dups, extracted in _extract_files_for_action(topdirs, hashalgs,
                                                      block_size, keep_prefix,
                                                      verbose, safe_mode):
@@ -340,20 +351,6 @@ def mv_file_dups(topdirs=['./'], hashalgs=['md5'], block_size=4096,
                 print('mv {0} to {1}'.format(f, dest_dir))
             if not simulate:
                 shutil.move(f, dest_dir)
-
-
-def iter_file_dups(topdirs=['./'], rethash=False, hashalgs=['md5'],
-                   block_size=4096, verbose=False, safe_mode=False):
-    """Yield duplicate files when found in specified directory list.
-       If rethash is True then tuple hash value and duplicate paths list is
-       returned, otherwise duplicate paths list is returned.
-    """
-    dups = file_dups(topdirs, hashalgs, block_size, verbose, safe_mode)
-    for hash_, fpaths in _dict_iter_items(dups):
-        if rethash:
-            yield (hash_, fpaths)
-        else:
-            yield fpaths
 
 
 def _remap_keys_to_str(d):
@@ -432,7 +429,7 @@ def main():
         rm_file_dups(topdirs=topdirs, hashalgs=hashalgs,
                      block_size=block_size,
                      simulate=simulate,
-                     keep_prefix=-keep_prefix,
+                     keep_prefix=keep_prefix,
                      verbose=verbose,
                      safe_mode=safe_mode)
     else:
