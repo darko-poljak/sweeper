@@ -153,14 +153,16 @@ def _fbequal(fpath1, fpath2):
        False otherwise.
        fpath1 and fpath2 are file paths.
     '''
-    with open(fpath1, "rb") as f1, open(fpath2, "rb") as f2:
-        while True:
-            b1 = f1.read(1)
-            b2 = f2.read(1)
-            if b1 != b2:  # different bytes
-                return False
-            if not b1 or not b2:  # end in one or both files
-                break
+    # nested to work with 2.6
+    with open(fpath1, "rb") as f1:
+        with open(fpath2, "rb") as f2:
+            while True:
+                b1 = f1.read(1)
+                b2 = f2.read(1)
+                if b1 != b2:  # different bytes
+                    return False
+                if not b1 or not b2:  # end in one or both files
+                    break
     if not b1 and not b2:  # end in both files, files are equal
         return True
     # end in one file but not in the other, files aren't equal
